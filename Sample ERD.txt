@@ -1,0 +1,46 @@
+-- Departments table (Tracks different departments where items are used)
+CREATE TABLE Departments (
+    department_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Trainers table (Stores multiple trainers)
+CREATE TABLE Trainers (
+    trainer_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    department_id INT NOT NULL,
+    FOREIGN KEY (department_id) REFERENCES Departments(department_id) ON DELETE CASCADE
+);
+
+-- Borrow Forms table (Tracks borrow requests)
+CREATE TABLE BorrowForms (
+    borrow_form_id INT AUTO_INCREMENT PRIMARY KEY,
+    trainer_id INT NOT NULL,
+    department_id INT NOT NULL,
+    date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (trainer_id) REFERENCES Trainers(trainer_id) ON DELETE CASCADE,
+    FOREIGN KEY (department_id) REFERENCES Departments(department_id) ON DELETE CASCADE
+);
+
+-- Items table (Tracks available inventory items)
+CREATE TABLE Items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    unit_of_measurement VARCHAR(50) NOT NULL
+);
+
+-- Borrowed Items table (Tracks the items linked to each borrow form)
+CREATE TABLE BorrowedItems (
+    borrow_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    borrow_form_id INT NOT NULL,
+    item_id INT NOT NULL,
+    purchase_order_reference VARCHAR(100),
+    receipt_quantity INT CHECK (receipt_quantity >= 0),
+    issue_quantity INT CHECK (issue_quantity >= 0),
+    remaining_unused INT GENERATED ALWAYS AS (receipt_quantity - issue_quantity) STORED,
+    days_to_consume INT CHECK (days_to_consume >= 0),
+    date_received DATE,
+    FOREIGN KEY (borrow_form_id) REFERENCES BorrowForms(borrow_form_id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES Items(item_id) ON DELETE CASCADE
+);
