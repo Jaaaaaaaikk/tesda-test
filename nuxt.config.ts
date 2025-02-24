@@ -18,11 +18,6 @@ export default defineNuxtConfig({
     'pages:extend' (pages) {
       function setMiddleware (pages: NuxtPage[]) {
         for (const page of pages) {
-          if (/* some condition */ true) {
-            page.meta ||= {}
-            // Note that this will override any middleware set in `definePageMeta` in the page
-            page.meta.middleware = ['test']
-          }
           if (page.children) {
             setMiddleware(page.children)
           }
@@ -31,4 +26,15 @@ export default defineNuxtConfig({
       setMiddleware(pages)
     }
   },
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
+  },
+  serverHandlers: [
+    { route: '/api/departments', handler: '~/server/api/departments.js' }
+  ]
 });

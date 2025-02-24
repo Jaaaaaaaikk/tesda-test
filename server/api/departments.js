@@ -1,6 +1,7 @@
+import { defineEventHandler } from 'h3';
 import { getPool } from '../db';
 
-export default async function handler(req, res) {
+export default defineEventHandler(async (event) => {
   try {
     console.log('Connecting to the database...');
     const pool = getPool();
@@ -12,4 +13,4 @@ export default async function handler(req, res) {
     console.error('Error fetching departments:', error.message);
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
-}
+});

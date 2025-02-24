@@ -33,7 +33,8 @@
                             <template v-if="field.id === 1">
                                 <select v-model="field.type" class="w-full p-1 border border-gray-300 rounded">
                                     <option value="">-- Select Entity Name --</option>
-                                    <option v-for="department in departments" :key="department.department_id" :value="department.name">{{ department.name }}</option>
+                                    <option v-for="department in departments || []" :key="department.department_id"
+                                        :value="department.name">{{ department.name }}</option>
                                 </select>
                             </template>
                             <template v-else>
@@ -57,7 +58,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item) in items" :key="item.id" class="odd:bg-white even:bg-gray-50">
+                    <tr v-for="(item, index) in items" :key="item.id" class="odd:bg-white even:bg-gray-50">
                         <td class="border border-gray-300 p-2">
                             <input v-model="item.date" type="date" class="w-full p-1 border border-gray-300 rounded" />
                         </td>
@@ -74,7 +75,7 @@
                                 class="w-full p-1 border border-gray-300 rounded" />
                         </td>
                         <td class="border border-gray-300 p-2">
-                            <input v-model.number="item.remainingUnused" type="number"
+                            <input v-model.number="item.remainingUnused" type="number" readonly
                                 class="w-full p-1 border border-gray-300 rounded" />
                         </td>
                         <td class="border border-gray-300 p-2">
@@ -94,11 +95,12 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 
 const purchaseOrderName = ref(["Order 1", "Order 2", "Order 3"]);
 const selectedOrder = ref("");
+const departments = ref([]);
 
 // Sample data of trainers who received purchase orders
 const trainers = ref([
@@ -122,27 +124,45 @@ const entityDetails = reactive([
 ]);
 
 const items = reactive([
-    { id: 1, date: '', reference: '', receiptQuantity: '', issue: '', remainingUnused: 0, daysToConsume: '' }
+    { id: 1, date: '', reference: '', receiptQuantity: 0, issue: 0, remainingUnused: 0, daysToConsume: '' }
 ]);
 
 const addRow = () => {
-    items.push({ id: items.length + 1, date: '', reference: '', receiptQuantity: '', issue: '', remainingUnused: 0, daysToConsume: '' });
+    items.push({ id: items.length + 1, date: '', reference: '', receiptQuantity: 0, issue: 0, remainingUnused: 0, daysToConsume: '' });
 };
 
-// Fetch departments from the API
-const departments = ref([]);
+// Watchers to update remainingUnused
+watch(
+    () => items.map(item => item.receiptQuantity),
+    (newValues, oldValues) => {
+        newValues.forEach((newValue, index) => {
+            items[index].remainingUnused = newValue - items[index].issue;
+        });
+    }
+);
+
+watch(
+    () => items.map(item => item.issue),
+    (newValues, oldValues) => {
+        newValues.forEach((newValue, index) => {
+            items[index].remainingUnused = items[index].receiptQuantity - newValue;
+        });
+    }
+);
+
 const fetchDepartments = async () => {
     try {
-        const response = await axios.get('/api/departments');
-        departments.value = response.data;
+        const response = await axios.get('/api/departments'); // Ensure your API path is correct
+        console.log('Departments fetched:', response.data); // Check what you get from the API
+        if (Array.isArray(response.data)) {
+            departments.value = response.data; // Ensure it's an array
+        } else {
+            console.error('Expected an array but got:', response.data);
+        }
     } catch (error) {
         console.error('Error fetching departments:', error);
     }
 };
-
-onMounted(() => {
-    fetchDepartments();
-});
 
 // Reset the dropdown when it loses focus (clicks outside)
 const resetDropdown = () => {
@@ -150,6 +170,11 @@ const resetDropdown = () => {
         selectedOrder.value = "";
     }
 };
+
+onMounted(() => {
+    fetchDepartments();
+});
+
 </script>
 
 <style scoped></style>
